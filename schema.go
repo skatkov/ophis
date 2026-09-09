@@ -2,6 +2,9 @@ package ophis
 
 import "github.com/njayp/ophis/internal/schema"
 
+// FlagAnnotationJSONSchema overrides the generated schema for a Cobra flag.
+const FlagAnnotationJSONSchema = "jsonschema"
+
 // ToolInput represents the input structure for command tools.
 // Do not `omitempty` the Flags field, there may be required flags inside.
 type ToolInput struct {

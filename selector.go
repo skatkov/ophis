@@ -120,7 +120,7 @@ func (s Selector) enhanceFlagsSchema(schema *jsonschema.Schema, cmd *cobra.Comma
 func (s Selector) createToolFromCmd(cmd *cobra.Command, toolNamePrefix string) *mcp.Tool {
 	schema := inputSchema.Copy()
 	s.enhanceFlagsSchema(schema.Properties["flags"], cmd)
-	enhanceArgsSchema(schema.Properties["args"], cmd)
+	enhanceArgsSchema(schema, cmd)
 
 	// Create the tool
 	return &mcp.Tool{
@@ -133,11 +133,12 @@ func (s Selector) createToolFromCmd(cmd *cobra.Command, toolNamePrefix string) *
 }
 
 // enhanceArgsSchema adds detailed argument information to the args property.
-func enhanceArgsSchema(schema *jsonschema.Schema, cmd *cobra.Command) {
+func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
+	schema := input.Properties["args"]
 	description := "Positional command line arguments"
 
 	// remove "[flags]" from usage
-	usage := strings.Replace(cmd.Use, " [flags]", "", 1)
+	usage := strings.ReplaceAll(cmd.Use, " [flags]", "")
 
 	// Extract argument pattern from cmd.Use
 	if usage != "" {
@@ -145,11 +146,60 @@ func enhanceArgsSchema(schema *jsonschema.Schema, cmd *cobra.Command) {
 			argsPattern := usage[spaceIdx+1:]
 			if argsPattern != "" {
 				description += fmt.Sprintf("\nUsage pattern: %s", argsPattern)
+				if minItems, maxItems, ok := argumentBounds(argsPattern); ok {
+					schema.MinItems = &minItems
+					schema.MaxItems = maxItems
+					if minItems > 0 {
+						schema.Type = "array"
+						schema.Types = nil
+						input.Required = append(input.Required, "args")
+					}
+				}
 			}
+		} else {
+			maxItems := 0
+			schema.MinItems = &maxItems
+			schema.MaxItems = &maxItems
 		}
 	}
 
 	schema.Description = description
+}
+
+func argumentBounds(pattern string) (int, *int, bool) {
+	fields := strings.Fields(pattern)
+	minItems, maxItems := 0, 0
+	variadic := false
+	for i := 0; i < len(fields); i++ {
+		if strings.ContainsAny(fields[i], "()|") {
+			return 0, nil, false
+		}
+		if fields[i] == "..." {
+			variadic = true
+			continue
+		}
+
+		argument := fields[i]
+		optional := strings.HasPrefix(argument, "[")
+		for optional && !strings.Contains(argument, "]") {
+			i++
+			if i == len(fields) {
+				return 0, nil, false
+			}
+			argument += " " + fields[i]
+		}
+		if strings.Contains(argument, "...") {
+			variadic = true
+		}
+		if !optional {
+			minItems++
+		}
+		maxItems++
+	}
+	if variadic {
+		return minItems, nil, true
+	}
+	return minItems, &maxItems, true
 }
 
 // toolName creates a tool name from the command path.

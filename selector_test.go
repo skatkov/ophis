@@ -274,6 +274,41 @@ func TestCreateToolFromCmd(t *testing.T) {
 	})
 }
 
+func TestArgumentBoundsReachToolSchema(t *testing.T) {
+	tests := []struct {
+		use      string
+		min      int
+		max      *int
+		required bool
+	}{
+		{use: "test", max: intPtr(0)},
+		{use: "test FILE", min: 1, max: intPtr(1), required: true},
+		{use: "test [FILE]", max: intPtr(1)},
+		{use: "test FILE...", min: 1, required: true},
+		{use: "test [FILE...]"},
+		{use: "test [file to read] [flags]", max: intPtr(1)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.use, func(t *testing.T) {
+			tool := Selector{}.createToolFromCmd(&cobra.Command{Use: tt.use}, "test")
+			input := tool.InputSchema.(*jsonschema.Schema)
+			args := input.Properties["args"]
+
+			require.NotNil(t, args.MinItems)
+			assert.Equal(t, tt.min, *args.MinItems)
+			assert.Equal(t, tt.max, args.MaxItems)
+			assert.Equal(t, tt.required, slices.Contains(input.Required, "args"))
+			if tt.required {
+				assert.Equal(t, "array", args.Type)
+				assert.Empty(t, args.Types)
+			}
+		})
+	}
+}
+
+func intPtr(value int) *int { return &value }
+
 func TestGenerateToolName(t *testing.T) {
 	root := &cobra.Command{
 		Use: "root",

@@ -605,3 +605,22 @@ func TestSetDefaultFromFlag_ScalarTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestAddFlagToSchemaHonorsIntegerJSONSchemaAnnotation(t *testing.T) {
+	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flagSet.Int("limit", 20, "Maximum number of results")
+	flag := flagSet.Lookup("limit")
+	flag.Annotations = map[string][]string{
+		"jsonschema": {`{"type":"integer","minimum":1,"maximum":1000}`},
+	}
+	schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+	AddFlagToSchema(schema, flag)
+
+	limit := schema.Properties["limit"]
+	assert.Equal(t, "integer", limit.Type)
+	assert.Equal(t, "Maximum number of results", limit.Description)
+	assert.Equal(t, 1.0, *limit.Minimum)
+	assert.Equal(t, 1000.0, *limit.Maximum)
+	assert.JSONEq(t, "20", string(limit.Default))
+}

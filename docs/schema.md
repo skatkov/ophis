@@ -21,7 +21,7 @@ Each flag becomes a property with:
 - `int`, `uint` → `integer`
 - `float` → `number`
 - `string` → `string`
-- `string` → `<JSON schema>` if the flag has an annotation called `jsonschema` with a value that is the JSON string representation of the schema
+- any flag type → `<JSON schema>` if the flag has an annotation called `jsonschema` with a value that is the JSON string representation of the schema
 - `stringSlice`, `intSlice` → `array`
 - `duration`, `ip`, `ipNet` → `string` with pattern validation
 
@@ -80,20 +80,22 @@ if err != nil {
 cmd.Flags().String("a_json_obj", "", "Some JSON Object")
 jsonobj := cmd.Flags().Lookup("a_json_obj")
 jsonobj.Annotations = make(map[string][]string)
-jsonobj.Annotations["jsonschema"] = []string{string(bytes)}
+jsonobj.Annotations[ophis.FlagAnnotationJSONSchema] = []string{string(bytes)}
 
 ```
 
 ### Arguments
 
-Positional arguments are a string array:
+Positional arguments are a string array. Required, optional, and variadic argument counts are derived from Cobra's `Use` pattern and emitted as `required`, `minItems`, and `maxItems` constraints:
 
 ```json
 {
   "args": {
     "type": "array",
     "description": "Positional arguments\nUsage: [NAME] [flags]",
-    "items": { "type": "string" }
+    "items": { "type": "string" },
+    "minItems": 0,
+    "maxItems": 1
   }
 }
 ```
