@@ -3,6 +3,7 @@ package ophis
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -178,9 +179,14 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
 	schema.Description = description
 }
 
-// validatorAllowsArgCount probes a user-supplied validator with empty placeholder arguments.
+// validatorAllowsArgCount invokes user code during registration with empty placeholder arguments.
 func validatorAllowsArgCount(cmd *cobra.Command, count int) (accepted, probed bool) {
+	out, errOut := cmd.OutOrStdout(), cmd.ErrOrStderr()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
 	defer func() {
+		cmd.SetOut(out)
+		cmd.SetErr(errOut)
 		if recover() != nil {
 			probed = false
 		}

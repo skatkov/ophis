@@ -57,6 +57,7 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 					annotatedSchema.Description = flag.Usage
 				}
 				setDefaultFromFlag(&annotatedSchema, flag)
+				validateDefault(&annotatedSchema, flag)
 				schema.Properties[flag.Name] = &annotatedSchema
 				return
 			}

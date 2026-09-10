@@ -107,6 +107,11 @@ func TestParseArrayDefault(t *testing.T) {
 			itemSchema: &jsonschema.Schema{Type: "unknown"},
 			expected:   nil,
 		},
+		{
+			name:     "missing items schema",
+			defValue: "[item1,item2]",
+			expected: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -500,6 +505,10 @@ func TestParseObjectEdgeCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseObjectWithoutSchema(t *testing.T) {
+	assert.Nil(t, parseObject("[key=value]", nil))
 }
 
 func TestSetDefaultFromFlag_ScalarTypes(t *testing.T) {

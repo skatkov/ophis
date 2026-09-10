@@ -13,7 +13,6 @@ import (
 // setDefaultFromFlag sets the default value for a flag schema if it's not a zero value.
 func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
 	if flagSchema.Default != nil {
-		validateDefault(flagSchema, flag)
 		return
 	}
 	defValue := flag.DefValue
@@ -52,7 +51,6 @@ func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
 			setDefault(obj)
 		}
 	}
-	validateDefault(flagSchema, flag)
 }
 
 func validateDefault(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
@@ -92,6 +90,10 @@ func parseArray(defValue string, schema *jsonschema.Schema) any {
 	// Verify array format
 	if !strings.HasPrefix(defValue, "[") || !strings.HasSuffix(defValue, "]") {
 		slog.Warn("malformed array default value: must start with '[' and end with ']'", "value", defValue)
+		return nil
+	}
+	if schema == nil {
+		slog.Warn("cannot parse array default without an items schema", "value", defValue)
 		return nil
 	}
 
@@ -188,6 +190,10 @@ func parseObject(defValue string, schema *jsonschema.Schema) any {
 	// Verify array format
 	if !strings.HasPrefix(defValue, "[") || !strings.HasSuffix(defValue, "]") {
 		slog.Warn("malformed array default value: must start with '[' and end with ']'", "value", defValue)
+		return nil
+	}
+	if schema == nil {
+		slog.Warn("cannot parse object default without an additional properties schema", "value", defValue)
 		return nil
 	}
 
