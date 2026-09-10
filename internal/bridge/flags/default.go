@@ -12,6 +12,9 @@ import (
 
 // setDefaultFromFlag sets the default value for a flag schema if it's not a zero value.
 func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
+	if flagSchema.Default != nil {
+		return
+	}
 	defValue := flag.DefValue
 	if defValue == "" {
 		return
@@ -46,6 +49,12 @@ func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
 	case "object":
 		if obj := parseObject(defValue, flagSchema.AdditionalProperties); obj != nil {
 			setDefault(obj)
+		}
+	}
+	if flagSchema.Default != nil {
+		if _, err := flagSchema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true}); err != nil {
+			slog.Warn("flag default does not satisfy its JSON schema, omitting it", "flag", flag.Name, "error", err)
+			flagSchema.Default = nil
 		}
 	}
 }

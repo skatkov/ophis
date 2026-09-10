@@ -86,7 +86,7 @@ jsonobj.Annotations[ophis.FlagAnnotationJSONSchema] = []string{string(bytes)}
 
 ### Arguments
 
-Positional arguments are a string array. Required, optional, and variadic argument counts are derived from recognizable Cobra `Use` patterns and emitted as `required`, `minItems`, and `maxItems` constraints. Ambiguous or undocumented patterns remain unconstrained.
+Positional arguments are a string array. Required, optional, and variadic argument counts are derived from recognizable Cobra `Use` patterns and emitted as `required`, `minItems`, and `maxItems` constraints when corroborated by the command's `Args` validator. Ambiguous, undocumented, or unenforced bounds remain unconstrained.
 
 ```json
 {

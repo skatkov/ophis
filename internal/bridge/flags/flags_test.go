@@ -624,3 +624,17 @@ func TestAddFlagToSchemaHonorsIntegerJSONSchemaAnnotation(t *testing.T) {
 	assert.Equal(t, 1000.0, *limit.Maximum)
 	assert.JSONEq(t, "20", string(limit.Default))
 }
+
+func TestAddFlagToSchemaValidatesAnnotatedDefaults(t *testing.T) {
+	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flagSet.Int("limit", 0, "Maximum number of results")
+	flag := flagSet.Lookup("limit")
+	flag.Annotations = map[string][]string{
+		FlagAnnotationJSONSchema: {`{"type":"integer","minimum":1}`},
+	}
+	schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+	AddFlagToSchema(schema, flag)
+
+	assert.Nil(t, schema.Properties["limit"].Default)
+}

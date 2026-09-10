@@ -277,25 +277,28 @@ func TestCreateToolFromCmd(t *testing.T) {
 func TestArgumentBoundsReachToolSchema(t *testing.T) {
 	tests := []struct {
 		use      string
+		args     cobra.PositionalArgs
 		min      *int
 		max      *int
 		required bool
 	}{
 		{use: "test"},
 		{use: "test [flags]"},
-		{use: "test FILE", min: intPtr(1), max: intPtr(1), required: true},
-		{use: "test [FILE]", min: intPtr(0), max: intPtr(1)},
-		{use: "test FILE...", min: intPtr(1), required: true},
-		{use: "test [FILE...]", min: intPtr(0)},
-		{use: "test [file to read] [flags]", min: intPtr(0), max: intPtr(1)},
-		{use: "test <first name>", min: intPtr(1), max: intPtr(1), required: true},
+		{use: "test FILE", args: cobra.ExactArgs(1), min: intPtr(1), max: intPtr(1), required: true},
+		{use: "test [FILE]", args: cobra.MaximumNArgs(1), min: intPtr(0), max: intPtr(1)},
+		{use: "test FILE...", args: cobra.MinimumNArgs(1), min: intPtr(1), required: true},
+		{use: "test [FILE...]", args: cobra.ArbitraryArgs, min: intPtr(0)},
+		{use: "test [file to read] [flags]", args: cobra.MaximumNArgs(1), min: intPtr(0), max: intPtr(1)},
+		{use: "test <first name>", args: cobra.ExactArgs(1), min: intPtr(1), max: intPtr(1), required: true},
 		{use: "test -f FILE"},
 		{use: "test -- COMMAND"},
+		{use: "test DOCUMENT", args: cobra.MaximumNArgs(1), max: intPtr(1)},
+		{use: "test SERVICE"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.use, func(t *testing.T) {
-			tool := Selector{}.createToolFromCmd(&cobra.Command{Use: tt.use}, "test")
+			tool := Selector{}.createToolFromCmd(&cobra.Command{Use: tt.use, Args: tt.args}, "test")
 			input := tool.InputSchema.(*jsonschema.Schema)
 			args := input.Properties["args"]
 
