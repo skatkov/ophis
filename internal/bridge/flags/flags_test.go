@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"net"
 	"testing"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -626,15 +627,41 @@ func TestAddFlagToSchemaHonorsIntegerJSONSchemaAnnotation(t *testing.T) {
 }
 
 func TestAddFlagToSchemaValidatesAnnotatedDefaults(t *testing.T) {
-	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	flagSet.Int("limit", 0, "Maximum number of results")
-	flag := flagSet.Lookup("limit")
-	flag.Annotations = map[string][]string{
-		FlagAnnotationJSONSchema: {`{"type":"integer","minimum":1}`},
+	tests := []struct {
+		name       string
+		annotation string
+		want       string
+	}{
+		{name: "invalid generated default", annotation: `{"type":"integer","minimum":1}`},
+		{name: "invalid annotated default", annotation: `{"type":"integer","minimum":10,"default":1}`},
+		{name: "valid annotated default", annotation: `{"type":"integer","minimum":1,"default":10}`, want: "10"},
 	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			flagSet.Int("limit", 0, "Maximum number of results")
+			flag := flagSet.Lookup("limit")
+			flag.Annotations = map[string][]string{FlagAnnotationJSONSchema: {tt.annotation}}
+			schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+			AddFlagToSchema(schema, flag)
+
+			if tt.want == "" {
+				assert.Nil(t, schema.Properties["limit"].Default)
+			} else {
+				assert.JSONEq(t, tt.want, string(schema.Properties["limit"].Default))
+			}
+		})
+	}
+}
+
+func TestAddFlagToSchemaPreservesCompressedIPv6Default(t *testing.T) {
+	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flagSet.IP("address", net.ParseIP("::1"), "IP address")
 	schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
 
-	AddFlagToSchema(schema, flag)
+	AddFlagToSchema(schema, flagSet.Lookup("address"))
 
-	assert.Nil(t, schema.Properties["limit"].Default)
+	assert.JSONEq(t, `"::1"`, string(schema.Properties["address"].Default))
 }

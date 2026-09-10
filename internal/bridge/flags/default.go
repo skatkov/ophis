@@ -13,6 +13,7 @@ import (
 // setDefaultFromFlag sets the default value for a flag schema if it's not a zero value.
 func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
 	if flagSchema.Default != nil {
+		validateDefault(flagSchema, flag)
 		return
 	}
 	defValue := flag.DefValue
@@ -51,11 +52,27 @@ func setDefaultFromFlag(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
 			setDefault(obj)
 		}
 	}
-	if flagSchema.Default != nil {
-		if _, err := flagSchema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true}); err != nil {
-			slog.Warn("flag default does not satisfy its JSON schema, omitting it", "flag", flag.Name, "error", err)
-			flagSchema.Default = nil
-		}
+	validateDefault(flagSchema, flag)
+}
+
+func validateDefault(flagSchema *jsonschema.Schema, flag *pflag.Flag) {
+	if flagSchema.Default == nil {
+		return
+	}
+	resolved, err := flagSchema.Resolve(nil)
+	if err != nil {
+		slog.Warn("cannot validate flag default because its JSON schema cannot be resolved", "flag", flag.Name, "error", err)
+		return
+	}
+	var value any
+	if err := json.Unmarshal(flagSchema.Default, &value); err != nil {
+		slog.Warn("flag has malformed JSON default, omitting it", "flag", flag.Name, "error", err)
+		flagSchema.Default = nil
+		return
+	}
+	if err := resolved.Validate(value); err != nil {
+		slog.Warn("flag default does not satisfy its JSON schema, omitting it", "flag", flag.Name, "error", err)
+		flagSchema.Default = nil
 	}
 }
 

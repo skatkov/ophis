@@ -23,7 +23,8 @@ Each flag becomes a property with:
 - `string` → `string`
 - any flag type → `<JSON schema>` if the flag has an annotation called `jsonschema` with a value that is the JSON string representation of the schema
 - `stringSlice`, `intSlice` → `array`
-- `duration`, `ip`, `ipNet` → `string` with pattern validation
+- `duration` → `string` with pattern validation
+- `ip`, `ipNet` → `string`; pflag validates their values
 
 Flags marked as required (via `cmd.MarkFlagRequired()`) are included in the schema's `required` array. Default values are included in the schema, except for empty strings (`""`) and empty arrays (`[]`).
 
@@ -94,7 +95,6 @@ Positional arguments are a string array. Required, optional, and variadic argume
     "type": "array",
     "description": "Positional command line arguments\nUsage pattern: [NAME]",
     "items": { "type": "string" },
-    "minItems": 0,
     "maxItems": 1
   }
 }

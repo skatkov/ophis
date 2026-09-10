@@ -102,14 +102,12 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 	case "ip":
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: IPv4 or IPv6 address)"
-		flagSchema.Pattern = `^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]|)\d)$|^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4})$`
 	case "ipMask":
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: IP mask, e.g., '255.255.255.0')"
 	case "ipNet":
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: CIDR notation, e.g., '192.168.1.0/24')"
-		flagSchema.Pattern = `^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]|)\d)/([0-9]|[1-2][0-9]|3[0-2])$`
 	case "bytesHex":
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: hexadecimal string)"
