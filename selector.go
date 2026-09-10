@@ -156,10 +156,6 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
 					}
 				}
 			}
-		} else {
-			maxItems := 0
-			schema.MinItems = &maxItems
-			schema.MaxItems = &maxItems
 		}
 	}
 
@@ -171,9 +167,6 @@ func argumentBounds(pattern string) (int, *int, bool) {
 	minItems, maxItems := 0, 0
 	variadic := false
 	for i := 0; i < len(fields); i++ {
-		if strings.ContainsAny(fields[i], "()|") {
-			return 0, nil, false
-		}
 		if fields[i] == "..." {
 			variadic = true
 			continue
@@ -181,12 +174,33 @@ func argumentBounds(pattern string) (int, *int, bool) {
 
 		argument := fields[i]
 		optional := strings.HasPrefix(argument, "[")
-		for optional && !strings.Contains(argument, "]") {
+		closing := ""
+		switch {
+		case optional:
+			closing = "]"
+		case strings.HasPrefix(argument, "<"):
+			closing = ">"
+		case strings.ContainsAny(argument, "[]<>"):
+			return 0, nil, false
+		}
+		for closing != "" && !strings.HasSuffix(argument, closing) {
 			i++
 			if i == len(fields) {
 				return 0, nil, false
 			}
 			argument += " " + fields[i]
+		}
+		if strings.ContainsAny(argument, "()|") {
+			return 0, nil, false
+		}
+		content := strings.Trim(argument, "[]<>")
+		if content == "" || strings.ContainsAny(content, "[]<>") {
+			return 0, nil, false
+		}
+		for _, field := range strings.Fields(content) {
+			if strings.HasPrefix(field, "-") {
+				return 0, nil, false
+			}
 		}
 		if strings.Contains(argument, "...") {
 			variadic = true

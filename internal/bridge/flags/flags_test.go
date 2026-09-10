@@ -611,7 +611,7 @@ func TestAddFlagToSchemaHonorsIntegerJSONSchemaAnnotation(t *testing.T) {
 	flagSet.Int("limit", 20, "Maximum number of results")
 	flag := flagSet.Lookup("limit")
 	flag.Annotations = map[string][]string{
-		"jsonschema": {`{"type":"integer","minimum":1,"maximum":1000}`},
+		FlagAnnotationJSONSchema: {`{"type":"integer","minimum":1,"maximum":1000}`},
 	}
 	schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
 

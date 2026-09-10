@@ -82,7 +82,7 @@ func TestCreateToolFromCmd(t *testing.T) {
 	cmd.Flags().String("a_json_obj", "", "Some JSON Object")
 	jsonobj := cmd.Flags().Lookup("a_json_obj")
 	jsonobj.Annotations = make(map[string][]string)
-	jsonobj.Annotations["jsonschema"] = []string{string(bytes)}
+	jsonobj.Annotations[FlagAnnotationJSONSchema] = []string{string(bytes)}
 
 	// generate schema for a test array
 	aJSONArraySchema, err := jsonschema.For[SomeJSONArray](nil)
@@ -95,7 +95,7 @@ func TestCreateToolFromCmd(t *testing.T) {
 	cmd.Flags().String("a_json_array", "[]", "Some JSON Array")
 	jsonarray := cmd.Flags().Lookup("a_json_array")
 	jsonarray.Annotations = make(map[string][]string)
-	jsonarray.Annotations["jsonschema"] = []string{string(bytes)}
+	jsonarray.Annotations[FlagAnnotationJSONSchema] = []string{string(bytes)}
 
 	// Add a hidden flag
 	cmd.Flags().String("hidden", "secret", "Hidden flag")
@@ -277,16 +277,20 @@ func TestCreateToolFromCmd(t *testing.T) {
 func TestArgumentBoundsReachToolSchema(t *testing.T) {
 	tests := []struct {
 		use      string
-		min      int
+		min      *int
 		max      *int
 		required bool
 	}{
-		{use: "test", max: intPtr(0)},
-		{use: "test FILE", min: 1, max: intPtr(1), required: true},
-		{use: "test [FILE]", max: intPtr(1)},
-		{use: "test FILE...", min: 1, required: true},
-		{use: "test [FILE...]"},
-		{use: "test [file to read] [flags]", max: intPtr(1)},
+		{use: "test"},
+		{use: "test [flags]"},
+		{use: "test FILE", min: intPtr(1), max: intPtr(1), required: true},
+		{use: "test [FILE]", min: intPtr(0), max: intPtr(1)},
+		{use: "test FILE...", min: intPtr(1), required: true},
+		{use: "test [FILE...]", min: intPtr(0)},
+		{use: "test [file to read] [flags]", min: intPtr(0), max: intPtr(1)},
+		{use: "test <first name>", min: intPtr(1), max: intPtr(1), required: true},
+		{use: "test -f FILE"},
+		{use: "test -- COMMAND"},
 	}
 
 	for _, tt := range tests {
@@ -295,8 +299,7 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 			input := tool.InputSchema.(*jsonschema.Schema)
 			args := input.Properties["args"]
 
-			require.NotNil(t, args.MinItems)
-			assert.Equal(t, tt.min, *args.MinItems)
+			assert.Equal(t, tt.min, args.MinItems)
 			assert.Equal(t, tt.max, args.MaxItems)
 			assert.Equal(t, tt.required, slices.Contains(input.Required, "args"))
 			if tt.required {

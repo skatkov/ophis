@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// FlagAnnotationJSONSchema identifies a flag's JSON schema override.
+const FlagAnnotationJSONSchema = "jsonschema"
+
 // isFlagRequired checks if a flag has been marked as required by Cobra.
 // Cobra uses the BashCompOneRequiredFlag annotation to track required flags.
 func isFlagRequired(flag *pflag.Flag) bool {
@@ -42,7 +45,7 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 
 		schema.Required = append(schema.Required, flag.Name)
 	}
-	if values, ok := flag.Annotations["jsonschema"]; ok {
+	if values, ok := flag.Annotations[FlagAnnotationJSONSchema]; ok {
 		if len(values) == 0 {
 			slog.Warn(fmt.Sprintf("No value for jsonschema annotation for flag %s, using its native type", flag.Name))
 		} else {
