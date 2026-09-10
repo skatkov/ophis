@@ -123,7 +123,7 @@ func TestCreateToolFromCmd(t *testing.T) {
 
 	t.Run("Default Selector", func(t *testing.T) {
 		// Create tool from command with a selector that accepts all flags
-		tool := Selector{}.createToolFromCmd(cmd, "parent")
+		tool := Selector{}.createToolFromCmd(cmd, "parent", false)
 
 		// Verify tool properties
 		assert.Equal(t, "parent_test", tool.Name)
@@ -233,7 +233,7 @@ func TestCreateToolFromCmd(t *testing.T) {
 		}
 
 		// Create tool from command with the restricted selector
-		tool := selector.createToolFromCmd(cmd, "parent")
+		tool := selector.createToolFromCmd(cmd, "parent", false)
 
 		// Verify tool properties
 		assert.Equal(t, "parent_test", tool.Name)
@@ -299,7 +299,7 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.use, func(t *testing.T) {
-			tool := Selector{}.createToolFromCmd(&cobra.Command{Use: tt.use, Args: tt.args}, "test")
+			tool := Selector{}.createToolFromCmd(&cobra.Command{Use: tt.use, Args: tt.args}, "test", true)
 			input := tool.InputSchema.(*jsonschema.Schema)
 			args := input.Properties["args"]
 
@@ -312,6 +312,21 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestArgumentConstraintInferenceIsOptIn(t *testing.T) {
+	probes := 0
+	cmd := &cobra.Command{Use: "test FILE", Args: func(_ *cobra.Command, _ []string) error {
+		probes++
+		return nil
+	}}
+
+	tool := Selector{}.createToolFromCmd(cmd, "test", false)
+	args := tool.InputSchema.(*jsonschema.Schema).Properties["args"]
+
+	assert.Zero(t, probes)
+	assert.Nil(t, args.MinItems)
+	assert.Nil(t, args.MaxItems)
 }
 
 func intPtr(value int) *int { return &value }

@@ -119,10 +119,10 @@ func (s Selector) enhanceFlagsSchema(schema *jsonschema.Schema, cmd *cobra.Comma
 
 // createToolFromCmd creates an MCP tool from a Cobra command.
 // The toolNamePrefix is used to replace the root command name in the tool name.
-func (s Selector) createToolFromCmd(cmd *cobra.Command, toolNamePrefix string) *mcp.Tool {
+func (s Selector) createToolFromCmd(cmd *cobra.Command, toolNamePrefix string, inferArgConstraints bool) *mcp.Tool {
 	schema := inputSchema.Copy()
 	s.enhanceFlagsSchema(schema.Properties["flags"], cmd)
-	enhanceArgsSchema(schema, cmd)
+	enhanceArgsSchema(schema, cmd, inferArgConstraints)
 
 	// Create the tool
 	return &mcp.Tool{
@@ -135,7 +135,7 @@ func (s Selector) createToolFromCmd(cmd *cobra.Command, toolNamePrefix string) *
 }
 
 // enhanceArgsSchema adds detailed argument information to the args property.
-func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
+func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstraints bool) {
 	schema := input.Properties["args"]
 	description := "Positional command line arguments"
 
@@ -148,7 +148,7 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
 			argsPattern := usage[spaceIdx+1:]
 			if argsPattern != "" {
 				description += fmt.Sprintf("\nUsage pattern: %s", argsPattern)
-				if minItems, maxItems, ok := argumentBounds(argsPattern); ok && cmd.Args != nil {
+				if minItems, maxItems, ok := argumentBounds(argsPattern); inferConstraints && ok && cmd.Args != nil {
 					minConfirmed := false
 					for count := 0; minItems > 0 && !minConfirmed && count <= minItems; count++ {
 						accepted, probed := validatorAllowsArgCount(cmd, count)
