@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -181,17 +182,16 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command) {
 
 // validatorAllowsArgCount invokes user code during registration with empty placeholder arguments.
 func validatorAllowsArgCount(cmd *cobra.Command, count int) (accepted, probed bool) {
-	out, errOut := cmd.OutOrStdout(), cmd.ErrOrStderr()
-	cmd.SetOut(io.Discard)
-	cmd.SetErr(io.Discard)
+	probe := *cmd
+	probe.SetOut(io.Discard)
+	probe.SetErr(io.Discard)
 	defer func() {
-		cmd.SetOut(out)
-		cmd.SetErr(errOut)
-		if recover() != nil {
+		if r := recover(); r != nil {
+			slog.Debug("args validator panicked during probe, skipping bounds", "command", cmd.CommandPath(), "count", count, "panic", r)
 			probed = false
 		}
 	}()
-	return cmd.Args(cmd, make([]string, count)) == nil, true
+	return cmd.Args(&probe, make([]string, count)) == nil, true
 }
 
 func argumentBounds(pattern string) (int, *int, bool) {

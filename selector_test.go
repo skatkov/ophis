@@ -318,13 +318,15 @@ func intPtr(value int) *int { return &value }
 
 func TestValidatorProbeSuppressesOutput(t *testing.T) {
 	var output bytes.Buffer
+	root := &cobra.Command{Use: "root"}
+	root.SetOut(&output)
+	root.SetErr(&output)
 	cmd := &cobra.Command{Args: func(cmd *cobra.Command, _ []string) error {
 		cmd.Print("discarded")
 		cmd.PrintErr("discarded")
 		return nil
 	}}
-	cmd.SetOut(&output)
-	cmd.SetErr(&output)
+	root.AddCommand(cmd)
 
 	accepted, probed := validatorAllowsArgCount(cmd, 0)
 	cmd.Print("restored")
