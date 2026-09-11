@@ -63,7 +63,8 @@ type Config struct {
 	ToolNamePrefix string
 
 	// InferArgConstraints derives schema bounds by invoking each command's Args validator.
-	// Enable only when validators are pure and their cardinality does not depend on flags.
+	// Enable only when validators are pure and depend only on the number of arguments,
+	// not their values or flag state.
 	// Default: false.
 	InferArgConstraints bool
 

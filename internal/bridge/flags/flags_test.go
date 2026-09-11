@@ -675,6 +675,7 @@ func TestAddFlagToSchemaFallsBackFromUnusableAnnotations(t *testing.T) {
 		{name: "invalid item default", annotation: `{"type":"array","items":{"type":"integer","default":"oops"}}`},
 		{name: "missing reference", annotation: `{"$ref":"#/definitions/missing"}`},
 		{name: "remote reference", annotation: `{"$ref":"https://example.com/schema.json"}`},
+		{name: "embedded internal reference", annotation: `{"$ref":"#/$defs/value","$defs":{"value":{"type":"string"}}}`},
 	}
 
 	for _, tt := range tests {

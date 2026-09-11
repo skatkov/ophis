@@ -58,7 +58,10 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 				}
 				setDefaultFromFlag(&annotatedSchema, flag)
 				validateDefault(&annotatedSchema, flag)
-				if _, err := annotatedSchema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true}); err != nil {
+				embeddedSchema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{
+					"flags": {Properties: map[string]*jsonschema.Schema{flag.Name: &annotatedSchema}},
+				}}
+				if _, err := embeddedSchema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true}); err != nil {
 					slog.Error(fmt.Sprintf("Annotated JSON schema for flag %s is unusable (%v), using its native type", flag.Name, err))
 				} else {
 					schema.Properties[flag.Name] = &annotatedSchema
