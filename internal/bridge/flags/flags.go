@@ -58,8 +58,12 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 				}
 				setDefaultFromFlag(&annotatedSchema, flag)
 				validateDefault(&annotatedSchema, flag)
-				schema.Properties[flag.Name] = &annotatedSchema
-				return
+				if _, err := annotatedSchema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true}); err != nil {
+					slog.Error(fmt.Sprintf("Annotated JSON schema for flag %s is unusable (%v), using its native type", flag.Name, err))
+				} else {
+					schema.Properties[flag.Name] = &annotatedSchema
+					return
+				}
 			}
 		}
 	}
@@ -100,6 +104,7 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: Go duration string, e.g., '10s', '2h45m')"
 		flagSchema.Pattern = `^-?([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
+	// pflag validates IP values; regexes reject valid compressed IPv6 addresses.
 	case "ip":
 		flagSchema.Type = "string"
 		flagSchema.Description += " (format: IPv4 or IPv6 address)"

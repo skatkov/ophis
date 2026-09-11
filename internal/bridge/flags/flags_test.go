@@ -665,6 +665,37 @@ func TestAddFlagToSchemaValidatesAnnotatedDefaults(t *testing.T) {
 	}
 }
 
+func TestAddFlagToSchemaFallsBackFromUnusableAnnotations(t *testing.T) {
+	tests := []struct {
+		name       string
+		annotation string
+	}{
+		{name: "invalid pattern", annotation: `{"type":"string","pattern":"([unclosed"}`},
+		{name: "invalid property default", annotation: `{"type":"object","properties":{"n":{"type":"integer","default":"oops"}}}`},
+		{name: "invalid item default", annotation: `{"type":"array","items":{"type":"integer","default":"oops"}}`},
+		{name: "missing reference", annotation: `{"$ref":"#/definitions/missing"}`},
+		{name: "remote reference", annotation: `{"$ref":"https://example.com/schema.json"}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			flagSet.String("value", "fallback", "Value")
+			flag := flagSet.Lookup("value")
+			flag.Annotations = map[string][]string{FlagAnnotationJSONSchema: {tt.annotation}}
+			schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+			AddFlagToSchema(schema, flag)
+
+			value := schema.Properties["value"]
+			assert.Equal(t, "string", value.Type)
+			assert.JSONEq(t, `"fallback"`, string(value.Default))
+			_, err := value.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true})
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestAddFlagToSchemaPreservesCompressedIPv6Default(t *testing.T) {
 	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	flagSet.IP("address", net.ParseIP("::1"), "IP address")

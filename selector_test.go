@@ -293,8 +293,10 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 		{use: "test [FILE...]", args: cobra.ArbitraryArgs},
 		{use: "test [file to read] [flags]", args: cobra.MaximumNArgs(1), max: intPtr(1)},
 		{use: "test <first name>", args: cobra.ExactArgs(1), min: intPtr(1), max: intPtr(1), required: true},
-		{use: "test -f FILE"},
-		{use: "test -- COMMAND"},
+		{use: "test -f FILE", args: cobra.ExactArgs(1)},
+		{use: "test -- COMMAND", args: cobra.ExactArgs(1)},
+		{use: "test (A|B)", args: cobra.ExactArgs(1)},
+		{use: "test [TYPE][.VERSION]", args: cobra.ExactArgs(1)},
 		{use: "test DOCUMENT", args: cobra.MaximumNArgs(1), max: intPtr(1)},
 		{use: "test SERVICE"},
 	}

@@ -26,7 +26,7 @@ Each flag becomes a property with:
 - `duration` → `string` with pattern validation
 - `ip`, `ipNet` → `string`; pflag validates their values
 
-Flags marked as required (via `cmd.MarkFlagRequired()`) are included in the schema's `required` array. Default values are included in the schema, except for empty strings (`""`) and empty arrays (`[]`).
+Flags marked as required (via `cmd.MarkFlagRequired()`) are included in the schema's `required` array. Default values are included in the schema, except for empty strings (`""`) and empty arrays (`[]`). A valid default supplied by a `jsonschema` annotation takes precedence over the pflag default.
 
 **Example:**
 
