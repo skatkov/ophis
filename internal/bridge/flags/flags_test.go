@@ -674,3 +674,35 @@ func TestAddFlagToSchemaPreservesCompressedIPv6Default(t *testing.T) {
 
 	assert.JSONEq(t, `"::1"`, string(schema.Properties["address"].Default))
 }
+
+func TestAddFlagToSchemaValidatesGeneratedDefaults(t *testing.T) {
+	tests := []struct {
+		name       string
+		defValue   string
+		createFlag func(*pflag.FlagSet)
+	}{
+		{name: "duration", defValue: "not-a-duration", createFlag: func(flags *pflag.FlagSet) {
+			flags.Duration("value", 0, "Value")
+		}},
+		{name: "hexadecimal bytes", defValue: "xyz", createFlag: func(flags *pflag.FlagSet) {
+			flags.BytesHex("value", nil, "Value")
+		}},
+		{name: "base64 bytes", defValue: "***", createFlag: func(flags *pflag.FlagSet) {
+			flags.BytesBase64("value", nil, "Value")
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			tt.createFlag(flagSet)
+			flag := flagSet.Lookup("value")
+			flag.DefValue = tt.defValue
+			schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+			AddFlagToSchema(schema, flag)
+
+			assert.Nil(t, schema.Properties["value"].Default)
+		})
+	}
+}

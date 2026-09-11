@@ -89,7 +89,7 @@ jsonobj.Annotations[ophis.FlagAnnotationJSONSchema] = []string{string(bytes)}
 
 Positional arguments are a string array. When `Config.InferArgConstraints` is enabled, required, optional, and variadic argument counts are derived from recognizable Cobra `Use` patterns and emitted as `required`, `minItems`, and `maxItems` constraints when corroborated by the command's `Args` validator. Ambiguous, undocumented, or unenforced bounds remain unconstrained.
 
-Constraint inference invokes each command's `Args` validator with empty placeholder arguments during tool registration. Enable it only for validators that are pure and whose cardinality does not depend on flags. Output written through the probed command is discarded, and panics leave argument bounds unconstrained; direct process I/O and exits cannot be contained.
+Constraint inference invokes each command's `Args` validator with synthetic placeholder arguments during tool registration. Enable it only for validators that are pure and whose cardinality does not depend on flags. Output written through the probed command is discarded, and panics leave argument bounds unconstrained; direct process I/O and exits cannot be contained.
 
 ```json
 {

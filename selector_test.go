@@ -284,7 +284,7 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 		required bool
 	}{
 		{use: "test"},
-		{use: "test", args: cobra.NoArgs, min: intPtr(0), max: intPtr(0)},
+		{use: "test", args: cobra.NoArgs},
 		{use: "test [flags]"},
 		{use: "test [flags]", args: cobra.ArbitraryArgs},
 		{use: "test FILE", args: cobra.ExactArgs(1), min: intPtr(1), max: intPtr(1), required: true},
@@ -314,6 +314,28 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUndocumentedArgumentBoundsRemainUnconstrained(t *testing.T) {
+	cmd := &cobra.Command{Use: "test", ValidArgs: []string{"alpha", "beta"}, Args: cobra.OnlyValidArgs}
+
+	tool := Selector{}.createToolFromCmd(cmd, "test", true)
+	args := tool.InputSchema.(*jsonschema.Schema).Properties["args"]
+
+	assert.Nil(t, args.MinItems)
+	assert.Nil(t, args.MaxItems)
+}
+
+func TestExactArgumentCountIsProbedOnce(t *testing.T) {
+	probes := map[int]int{}
+	cmd := &cobra.Command{Use: "test FILE", Args: func(cmd *cobra.Command, args []string) error {
+		probes[len(args)]++
+		return cobra.ExactArgs(1)(cmd, args)
+	}}
+
+	Selector{}.createToolFromCmd(cmd, "test", true)
+
+	assert.Equal(t, map[int]int{0: 1, 1: 1, 2: 1}, probes)
 }
 
 func TestArgumentConstraintInferenceIsOptIn(t *testing.T) {

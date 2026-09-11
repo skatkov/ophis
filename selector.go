@@ -148,7 +148,12 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstr
 			argsPattern := usage[spaceIdx+1:]
 			if argsPattern != "" {
 				description += fmt.Sprintf("\nUsage pattern: %s", argsPattern)
-				if minItems, maxItems, ok := argumentBounds(argsPattern); inferConstraints && ok && cmd.Args != nil {
+				if inferConstraints && cmd.Args != nil {
+					minItems, maxItems, ok := argumentBounds(argsPattern)
+					if !ok {
+						schema.Description = description
+						return
+					}
 					minConfirmed := false
 					for count := 0; minItems > 0 && !minConfirmed && count <= minItems; count++ {
 						accepted, probed := validatorAllowsArgCount(cmd, count)
@@ -161,10 +166,15 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstr
 						schema.MinItems = &minItems
 					}
 					if maxItems != nil {
-						atMax, maxProbed := validatorAllowsArgCount(cmd, *maxItems)
-						aboveMax, aboveProbed := validatorAllowsArgCount(cmd, *maxItems+1)
-						if maxProbed && aboveProbed && atMax && !aboveMax {
-							schema.MaxItems = maxItems
+						atMax, maxProbed := minConfirmed, minConfirmed
+						if *maxItems != minItems || !minConfirmed {
+							atMax, maxProbed = validatorAllowsArgCount(cmd, *maxItems)
+						}
+						if maxProbed {
+							aboveMax, aboveProbed := validatorAllowsArgCount(cmd, *maxItems+1)
+							if aboveProbed && atMax && !aboveMax {
+								schema.MaxItems = maxItems
+							}
 						}
 					}
 					if minItems > 0 && minConfirmed {
@@ -173,14 +183,6 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstr
 						input.Required = append(input.Required, "args")
 					}
 				}
-			}
-		} else if inferConstraints && cmd.Args != nil {
-			acceptsZero, zeroProbed := validatorAllowsArgCount(cmd, 0)
-			acceptsOne, oneProbed := validatorAllowsArgCount(cmd, 1)
-			if zeroProbed && oneProbed && acceptsZero && !acceptsOne {
-				zero := 0
-				schema.MinItems = &zero
-				schema.MaxItems = &zero
 			}
 		}
 	}

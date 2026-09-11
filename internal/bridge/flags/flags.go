@@ -125,5 +125,6 @@ func AddFlagToSchema(schema *jsonschema.Schema, flag *pflag.Flag) {
 	}
 
 	setDefaultFromFlag(flagSchema, flag)
+	validateDefault(flagSchema, flag)
 	schema.Properties[flag.Name] = flagSchema
 }
