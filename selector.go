@@ -174,6 +174,14 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstr
 					}
 				}
 			}
+		} else if inferConstraints && cmd.Args != nil {
+			acceptsZero, zeroProbed := validatorAllowsArgCount(cmd, 0)
+			acceptsOne, oneProbed := validatorAllowsArgCount(cmd, 1)
+			if zeroProbed && oneProbed && acceptsZero && !acceptsOne {
+				zero := 0
+				schema.MinItems = &zero
+				schema.MaxItems = &zero
+			}
 		}
 	}
 

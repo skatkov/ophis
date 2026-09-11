@@ -284,7 +284,9 @@ func TestArgumentBoundsReachToolSchema(t *testing.T) {
 		required bool
 	}{
 		{use: "test"},
+		{use: "test", args: cobra.NoArgs, min: intPtr(0), max: intPtr(0)},
 		{use: "test [flags]"},
+		{use: "test [flags]", args: cobra.ArbitraryArgs},
 		{use: "test FILE", args: cobra.ExactArgs(1), min: intPtr(1), max: intPtr(1), required: true},
 		{use: "test [FILE]", args: cobra.MaximumNArgs(1), max: intPtr(1)},
 		{use: "test FILE...", args: cobra.MinimumNArgs(1), min: intPtr(1), required: true},
