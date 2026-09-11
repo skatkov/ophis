@@ -353,6 +353,18 @@ func TestValidatorProbeSuppressesOutput(t *testing.T) {
 	assert.Equal(t, "restored", output.String())
 }
 
+func TestValidatorProbeUsesNonEmptyArguments(t *testing.T) {
+	cmd := &cobra.Command{Args: func(_ *cobra.Command, args []string) error {
+		assert.Equal(t, []string{"arg", "arg"}, args)
+		return nil
+	}}
+
+	accepted, probed := validatorAllowsArgCount(cmd, 2)
+
+	assert.True(t, accepted)
+	assert.True(t, probed)
+}
+
 func TestGenerateToolName(t *testing.T) {
 	root := &cobra.Command{
 		Use: "root",

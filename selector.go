@@ -193,13 +193,17 @@ func validatorAllowsArgCount(cmd *cobra.Command, count int) (accepted, probed bo
 	probe := *cmd
 	probe.SetOut(io.Discard)
 	probe.SetErr(io.Discard)
+	args := make([]string, count)
+	for i := range args {
+		args[i] = "arg"
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Debug("args validator panicked during probe, skipping bounds", "command", cmd.CommandPath(), "count", count, "panic", r)
 			probed = false
 		}
 	}()
-	return cmd.Args(&probe, make([]string, count)) == nil, true
+	return cmd.Args(&probe, args) == nil, true
 }
 
 func argumentBounds(pattern string) (int, *int, bool) {
