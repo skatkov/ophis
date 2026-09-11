@@ -190,7 +190,7 @@ func enhanceArgsSchema(input *jsonschema.Schema, cmd *cobra.Command, inferConstr
 	schema.Description = description
 }
 
-// validatorAllowsArgCount invokes user code during registration with empty placeholder arguments.
+// validatorAllowsArgCount invokes user code during registration with synthetic placeholder arguments.
 func validatorAllowsArgCount(cmd *cobra.Command, count int) (accepted, probed bool) {
 	probe := *cmd
 	probe.SetOut(io.Discard)
@@ -201,7 +201,7 @@ func validatorAllowsArgCount(cmd *cobra.Command, count int) (accepted, probed bo
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			slog.Debug("args validator panicked during probe, skipping bounds", "command", cmd.CommandPath(), "count", count, "panic", r)
+			slog.Warn("args validator panicked during probe, skipping bounds", "command", cmd.CommandPath(), "count", count, "panic", r)
 			probed = false
 		}
 	}()
@@ -219,6 +219,10 @@ func argumentBounds(pattern string) (int, *int, bool) {
 		}
 
 		argument := fields[i]
+		if strings.HasSuffix(argument, "...") {
+			variadic = true
+			argument = strings.TrimSuffix(argument, "...")
+		}
 		optional := strings.HasPrefix(argument, "[")
 		closing := ""
 		switch {

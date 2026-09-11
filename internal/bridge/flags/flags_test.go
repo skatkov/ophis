@@ -696,6 +696,20 @@ func TestAddFlagToSchemaFallsBackFromUnusableAnnotations(t *testing.T) {
 	}
 }
 
+func TestAddFlagToSchemaPreservesDefaultForNullableAnnotation(t *testing.T) {
+	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flagSet.String("value", "fallback", "Value")
+	flag := flagSet.Lookup("value")
+	flag.Annotations = map[string][]string{FlagAnnotationJSONSchema: {`{"type":["string","null"]}`}}
+	schema := &jsonschema.Schema{Properties: map[string]*jsonschema.Schema{}}
+
+	AddFlagToSchema(schema, flag)
+
+	value := schema.Properties["value"]
+	assert.ElementsMatch(t, []string{"string", "null"}, value.Types)
+	assert.JSONEq(t, `"fallback"`, string(value.Default))
+}
+
 func TestAddFlagToSchemaPreservesCompressedIPv6Default(t *testing.T) {
 	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	flagSet.IP("address", net.ParseIP("::1"), "IP address")
